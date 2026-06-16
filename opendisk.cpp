@@ -7,6 +7,9 @@
 #include <set>
 
 #define OPENDISK_MSG "\033[1;36m[opendisk]\033[0m "
+#define WARNING "\033[91m[WARNING]\033[0m "
+#define ERROR "\033[31m[ERROR]\033[0m "
+#define FATAL "\033[1;31m[FATAL]\033[0m "
 
 struct Entry {
 	std::string path;
@@ -101,12 +104,22 @@ void print_files() {
 
 }
 
+void fatal() {
+	std::cout << OPENDISK_MSG << ERROR << FATAL << "Opendisk quit unexpectedly, see above for errors.\n";
+}
+
 int main(int argc, char* argv[]) {
+
+	if (argc > 2) {
+		std::cout << OPENDISK_MSG << ERROR << "Too many arguments\n";
+		fatal();
+		return 1;
+	}
 
 	files.clear();
 	seen_inodes.clear();
 
-	std::cout << OPENDISK_MSG << "Running..\n";
+	std::cout << OPENDISK_MSG  << "Running..\n";
 
 	std::string target_path = ".";
 
@@ -114,7 +127,11 @@ int main(int argc, char* argv[]) {
 		target_path = argv[1];
 	}
 
-	nftw(target_path.c_str(), function, 10, FTW_PHYS | FTW_MOUNT);
+	if (nftw(target_path.c_str(), function, 10, FTW_PHYS | FTW_MOUNT) == -1) {
+		std::cout << OPENDISK_MSG << ERROR << "Starting point is a dead target. Check spelling?\n";
+		fatal();
+		return 1;
+	}
 
 	std::sort(files.begin(), files.end(), [](const Entry& a, const Entry& b) {
 			return a.size > b.size;
